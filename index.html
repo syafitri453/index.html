@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Game Ular Makan Bola</title>
+  <title>Game Sepak Bola 2D</title>
   <style>
     * {
       box-sizing: border-box;
@@ -12,195 +12,295 @@
     }
 
     body {
-      background-color: #0f172a;
-      color: #f8fafc;
+      background-color: #1e293b;
+      color: white;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 20px;
+      padding: 10px;
     }
 
     h1 {
-      margin-bottom: 10px;
-      color: #38bdf8;
+      margin-bottom: 5px;
+      color: #4ade80;
+      font-size: 24px;
     }
 
-    .score-board {
-      font-size: 20px;
-      margin-bottom: 15px;
+    .scoreboard {
+      display: flex;
+      gap: 20px;
+      font-size: 18px;
       font-weight: bold;
+      margin-bottom: 10px;
+      background: #0f172a;
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: 1px solid #334155;
     }
 
     canvas {
-      background-color: #1e293b;
-      border: 3px solid #38bdf8;
-      border-radius: 8px;
+      background-color: #15803d; /* Warna Lapangan Hijau */
+      border: 4px solid white;
+      border-radius: 6px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
 
+    /* Kontrol Layar HP */
     .controls {
-      margin-top: 15px;
+      margin-top: 10px;
       display: grid;
-      grid-template-columns: repeat(3, 60px);
-      gap: 10px;
+      grid-template-columns: repeat(3, 50px);
+      gap: 5px;
     }
 
     .btn-ctrl {
       background-color: #334155;
       color: white;
-      border: 2px solid #475569;
-      font-size: 20px;
-      padding: 15px;
-      border-radius: 8px;
+      border: 1px solid #475569;
+      font-size: 18px;
+      padding: 10px;
+      border-radius: 6px;
       cursor: pointer;
       user-select: none;
     }
 
     .btn-ctrl:active {
-      background-color: #38bdf8;
-      color: black;
+      background-color: #22c55e;
     }
 
     .empty { visibility: hidden; }
-    
+
     p.info {
-      margin-top: 10px;
-      font-size: 14px;
+      margin-top: 8px;
+      font-size: 13px;
       color: #94a3b8;
     }
   </style>
 </head>
 <body>
 
-  <h1>🐍 Game Ular Makan Bola</h1>
-  <div class="score-board">Skor: <span id="score">0</span></div>
-
-  <!-- Area Papan Game -->
-  <canvas id="gameCanvas" width="300" height="300"></canvas>
-
-  <!-- Tombol Kontrol untuk Layar HP -->
-  <div class="controls">
-    <div class="empty"></div>
-    <button class="btn-ctrl" onclick="changeDir('UP')">⬆️</button>
-    <div class="empty"></div>
-    <button class="btn-ctrl" onclick="changeDir('LEFT')">⬅️</button>
-    <button class="btn-ctrl" onclick="changeDir('DOWN')">⬇️</button>
-    <button class="btn-ctrl" onclick="changeDir('RIGHT')">➡️</button>
+  <h1>⚽ Game Sepak Bola 2D</h1>
+  
+  <div class="scoreboard">
+    <div>Skor: <span id="score">0</span></div>
+    <div>Waktu: <span id="timer">60</span>s</div>
   </div>
 
-  <p class="info">Gunakan tombol panah keyboard di PC/Laptop atau tombol di layar untuk HP.</p>
+  <canvas id="field" width="360" height="460"></canvas>
+
+  <!-- Kontrol Tombol untuk HP -->
+  <div class="controls">
+    <div class="empty"></div>
+    <button class="btn-ctrl" onmousedown="move('UP')" onmouseup="stop()" ontouchstart="move('UP')" ontouchend="stop()">⬆️</button>
+    <div class="empty"></div>
+    <button class="btn-ctrl" onmousedown="move('LEFT')" onmouseup="stop()" ontouchstart="move('LEFT')" ontouchend="stop()">⬅️</button>
+    <button class="btn-ctrl" onmousedown="move('DOWN')" onmouseup="stop()" ontouchstart="move('DOWN')" ontouchend="stop()">⬇️</button>
+    <button class="btn-ctrl" onmousedown="move('RIGHT')" onmouseup="stop()" ontouchstart="move('RIGHT')" ontouchend="stop()">➡️</button>
+  </div>
+
+  <p class="info">Gunakan panah keyboard atau tombol di layar untuk merebut bola & cetak gol!</p>
 
   <script>
-    const canvas = document.getElementById("gameCanvas");
+    const canvas = document.getElementById("field");
     const ctx = canvas.getContext("2d");
-    const scoreElement = document.getElementById("score");
 
-    const box = 15; // Ukuran 1 kotak
     let score = 0;
+    let timeLeft = 60;
+    let gameOver = false;
 
-    // Posisi awal ular
-    let snake = [
-      { x: 9 * box, y: 10 * box },
-      { x: 8 * box, y: 10 * box }
-    ];
-
-    // Posisi makanan (bola)
-    let food = {
-      x: Math.floor(Math.random() * (canvas.width / box)) * box,
-      y: Math.floor(Math.random() * (canvas.height / box)) * box
+    // Objek Pemain
+    const player = {
+      x: 180,
+      y: 380,
+      radius: 12,
+      color: "#3b82f6", // Biru
+      speed: 3,
+      dx: 0,
+      dy: 0
     };
 
-    let d = "RIGHT";
+    // Objek Kiper Musuh
+    const enemy = {
+      x: 180,
+      y: 50,
+      radius: 12,
+      color: "#ef4444", // Merah
+      speed: 1.8,
+      dir: 1
+    };
+
+    // Objek Bola
+    const ball = {
+      x: 180,
+      y: 230,
+      radius: 8,
+      color: "#ffffff",
+      vx: 0,
+      vy: 0,
+      friction: 0.96
+    };
+
+    // Area Gawang Atas (Musuh)
+    const goal = { x: 110, y: 0, width: 140, height: 10 };
 
     // Kontrol Keyboard
-    document.addEventListener("keydown", direction);
+    const keys = {};
+    window.addEventListener("keydown", e => keys[e.key] = true);
+    window.addEventListener("keyup", e => keys[e.key] = false);
 
-    function direction(event) {
-      if (event.keyCode == 37 && d != "RIGHT") d = "LEFT";
-      else if (event.keyCode == 38 && d != "DOWN") d = "UP";
-      else if (event.keyCode == 39 && d != "LEFT") d = "RIGHT";
-      else if (event.keyCode == 40 && d != "UP") d = "DOWN";
+    function move(dir) {
+      if (dir === 'UP') player.dy = -player.speed;
+      if (dir === 'DOWN') player.dy = player.speed;
+      if (dir === 'LEFT') player.dx = -player.speed;
+      if (dir === 'RIGHT') player.dx = player.speed;
     }
 
-    function changeDir(newDir) {
-      if (newDir == "LEFT" && d != "RIGHT") d = "LEFT";
-      if (newDir == "UP" && d != "DOWN") d = "UP";
-      if (newDir == "RIGHT" && d != "LEFT") d = "RIGHT";
-      if (newDir == "DOWN" && d != "UP") d = "DOWN";
+    function stop() {
+      player.dx = 0;
+      player.dy = 0;
     }
 
-    // Cek Tabrakan
-    function collision(head, array) {
-      for (let i = 0; i < array.length; i++) {
-        if (head.x == array[i].x && head.y == array[i].y) return true;
+    // Timer Game
+    const timerInterval = setInterval(() => {
+      if (timeLeft > 0) {
+        timeLeft--;
+        document.getElementById("timer").innerText = timeLeft;
+      } else {
+        gameOver = true;
+        clearInterval(timerInterval);
+        alert("WAKTU HABIS! Total Gol Kamu: " + score);
+        location.reload();
       }
-      return false;
+    }, 1000);
+
+    function resetPositions() {
+      player.x = 180;
+      player.y = 380;
+      ball.x = 180;
+      ball.y = 230;
+      ball.vx = 0;
+      ball.vy = 0;
+      enemy.x = 180;
     }
 
-    // Fungsi Utama Game (Looping)
+    function update() {
+      if (gameOver) return;
+
+      // Gerakan Pemain dari Keyboard
+      if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
+      if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
+      if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
+      if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+
+      // Gerakan dari Tombol Layar
+      player.x += player.dx;
+      player.y += player.dy;
+
+      // Batasi Pemain di dalam Lapangan
+      player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+      player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+      // Gerakan Kiper Musuh (Bolak-balik di depan gawang)
+      enemy.x += enemy.speed * enemy.dir;
+      if (enemy.x > goal.x + goal.width - enemy.radius || enemy.x < goal.x + enemy.radius) {
+        enemy.dir *= -1;
+      }
+
+      // Fisika Bola (Pergerakan & Gesekan)
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+      ball.vx *= ball.friction;
+      ball.vy *= ball.friction;
+
+      // Pantulan Bola di Dinding Lapangan
+      if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) ball.vx *= -1;
+      if (ball.y + ball.radius > canvas.height) ball.vy *= -1;
+
+      // Deteksi TENDANGAN (Pemain menyentuh bola)
+      let dx = ball.x - player.x;
+      let dy = ball.y - player.y;
+      let dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < player.radius + ball.radius) {
+        let angle = Math.atan2(dy, dx);
+        let force = 6; // Kekuatan tendangan
+        ball.vx = Math.cos(angle) * force;
+        ball.vy = Math.sin(angle) * force;
+      }
+
+      // Deteksi KIPER MENANGKAP BOLA
+      let edx = ball.x - enemy.x;
+      let edy = ball.y - enemy.y;
+      let edist = Math.sqrt(edx * edx + edy * edy);
+
+      if (edist < enemy.radius + ball.radius) {
+        ball.vx *= -1.2;
+        ball.vy *= -1.2;
+      }
+
+      // Deteksi GOL!
+      if (
+        ball.x > goal.x && 
+        ball.x < goal.x + goal.width && 
+        ball.y - ball.radius <= goal.height
+      ) {
+        score++;
+        document.getElementById("score").innerText = score;
+        alert("GOOOOL!! ⚽🎉");
+        resetPositions();
+      }
+    }
+
     function draw() {
-      // Bersihkan papan game
-      ctx.fillStyle = "#1e293b";
+      // Gambar Lapangan
+      ctx.fillStyle = "#15803d";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Gambar Ular
-      for (let i = 0; i < snake.length; i++) {
-        ctx.fillStyle = (i == 0) ? "#4ade80" : "#22c55e"; // Kepala hijau terang, badan hijau
-        ctx.fillRect(snake[i].x, snake[i].y, box, box);
-        ctx.strokeStyle = "#1e293b";
-        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
-      }
-
-      // Gambar Makanan (Bola Merah)
-      ctx.fillStyle = "#f43f5e";
+      // Garis Tengah & Lingkaran Lapangan
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(food.x + box/2, food.y + box/2, box/2, 0, Math.PI * 2);
+      ctx.moveTo(0, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, 40, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Gambar Gawang
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+
+      // Gambar Pemain (Biru)
+      ctx.fillStyle = player.color;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Posisi kepala lama
-      let snakeX = snake[0].x;
-      let snakeY = snake[0].y;
+      // Gambar Kiper Musuh (Merah)
+      ctx.fillStyle = enemy.color;
+      ctx.beginPath();
+      ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
+      ctx.fill();
 
-      // Gerakkan arah
-      if (d == "LEFT") snakeX -= box;
-      if (d == "UP") snakeY -= box;
-      if (d == "RIGHT") snakeX += box;
-      if (d == "DOWN") snakeY += box;
-
-      // Jika Ular Makan Bola
-      if (snakeX == food.x && snakeY == food.y) {
-        score++;
-        scoreElement.innerText = score;
-        food = {
-          x: Math.floor(Math.random() * (canvas.width / box)) * box,
-          y: Math.floor(Math.random() * (canvas.height / box)) * box
-        };
-      } else {
-        snake.pop(); // Hapus ekor jika tidak makan
-      }
-
-      // Buat kepala baru
-      let newHead = { x: snakeX, y: snakeY };
-
-      // Aturan Kalah (Menabrak dinding atau menabrak diri sendiri)
-      if (
-        snakeX < 0 || snakeY < 0 ||
-        snakeX >= canvas.width || snakeY >= canvas.height ||
-        collision(newHead, snake)
-      ) {
-        clearInterval(game);
-        alert("GAME OVER! Skor kamu: " + score);
-        location.reload(); // Restart game otomatis
-      }
-
-      snake.unshift(newHead);
+      // Gambar Bola
+      ctx.fillStyle = ball.color;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    // Jalankan game tiap 100ms
-    let game = setInterval(draw, 100);
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
   </script>
 
 </body>
