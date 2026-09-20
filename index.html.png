@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Petualangan di Hutan Terlarang</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #1a1a2e;
+      color: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .game-container {
+      background-color: #16213e;
+      border: 2px solid #0f3460;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 100%;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      color: #e94560;
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    .story-text {
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+      min-height: 100px;
+      background-color: #0f3460;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    button {
+      background-color: #e94560;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background-color: #ff6b81;
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <h1>🌲 Hutan Terlarang</h1>
+    <div id="story" class="story-text">Memuat cerita...</div>
+    <div id="choices" class="options-grid"></div>
+  </div>
+
+  <script>
+    // Data Alur Cerita Game
+    const storyData = {
+      start: {
+        text: "Kamu terbangun di pinggir hutan gelap yang berkabut. Di depanmu ada dua jalur: jalur kiri yang dipenuhi obor redup, dan jalur kanan yang terdengar suara gemericik air.",
+        buttons: [
+          { text: "Lanjut ke Jalur Kiri (Obor)", nextState: "jalurKiri" },
+          { text: "Lanjut ke Jalur Kanan (Sungai)", nextState: "jalurKanan" }
+        ]
+      },
+      jalurKiri: {
+        text: "Kamu berjalan menyusuri obor dan menemukan sebuah pintu batu besar terunci. Di samping pintu ada kotak kayu tua dan sebuah obor yang hampir padam.",
+        buttons: [
+          { text: "Buka kotak kayu tua", nextState: "bukaKotak" },
+          { text: "Cari jalan mutar di sekitar pintu", nextState: "jalanMutar" }
+        ]
+      },
+      jalurKanan: {
+        text: "Kamu sampai di tepi sungai yang deras. Terlihat sebuah jembatan kayu yang lapuk dan seekor serigala tidur memblokir jalan tepi sungai.",
+        buttons: [
+          { text: "Seberangi jembatan lapuk", nextState: "jembatanPatah" },
+          { text: "Lewati serigala dengan berjelajah perlahan", nextState: "lewatSerigala" }
+        ]
+      },
+      bukaKotak: {
+        text: "🎉 Kamu menemukan Kunci Emas kuno! Kunci itu cocok untuk pintu batu. Kamu berhasil membuka jalan keluar dari hutan dan menemukan harta karun! GAMEOVER - MENANG!",
+        buttons: [
+          { text: "Main Lagi dari Awal", nextState: "start" }
+        ]
+      },
+      jalanMutar: {
+        text: "💀 Kamu tersesat di kegelapan mendalam dan tidak bisa menemukan jalan kembali. GAMEOVER - KALAH!",
+        buttons: [
+          { text: "Coba Lagi", nextState: "start" }
+        ]
+      },
+      jembatanPatah: {
+        text: "💀 Jembatan kayu patah saat kamu melangkah! Kamu jatuh ke sungai yang deras. GAMEOVER - KALAH!",
+        buttons: [
+          { text: "Coba Lagi", nextState: "start" }
+        ]
+      },
+      lewatSerigala: {
+        text: "🎉 Kamu berhasil melewati serigala tanpa membangunkan dia! Di ujung jalan kamu menemukan desa pemukiman warga. Selamat kamu selamat! GAMEOVER - MENANG!",
+        buttons: [
+          { text: "Main Lagi dari Awal", nextState: "start" }
+        ]
+      }
+    };
+
+    // Fungsi untuk memperbarui tampilan cerita dan pilihan
+    function showStory(stateKey) {
+      const currentState = storyData[stateKey];
+      const storyElement = document.getElementById("story");
+      const choicesElement = document.getElementById("choices");
+
+      // Tampilkan teks cerita
+      storyElement.innerText = currentState.text;
+
+      // Kosongkan tombol pilihan lama
+      choicesElement.innerHTML = "";
+
+      // Buat tombol pilihan baru
+      currentState.buttons.forEach(buttonData => {
+        const btn = document.createElement("button");
+        btn.innerText = buttonData.text;
+        btn.onclick = () => showStory(buttonData.nextState);
+        choicesElement.appendChild(btn);
+      });
+    }
+
+    // Jalankan game pertama kali saat halaman dibuka
+    showStory("start");
+  </script>
+
+</body>
+</html>
