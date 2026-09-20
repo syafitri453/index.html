@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Petualangan di Hutan Terlarang</title>
+  <title>Game Ular Makan Bola</title>
   <style>
     * {
       box-sizing: border-box;
@@ -12,145 +12,195 @@
     }
 
     body {
+      background-color: #0f172a;
+      color: #f8fafc;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #1a1a2e;
-      color: #e0e0e0;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
       min-height: 100vh;
       padding: 20px;
     }
 
-    .game-container {
-      background-color: #16213e;
-      border: 2px solid #0f3460;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 100%;
-      padding: 25px;
+    h1 {
+      margin-bottom: 10px;
+      color: #38bdf8;
+    }
+
+    .score-board {
+      font-size: 20px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    canvas {
+      background-color: #1e293b;
+      border: 3px solid #38bdf8;
+      border-radius: 8px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
 
-    h1 {
-      color: #e94560;
-      text-align: center;
-      margin-bottom: 20px;
-      font-size: 24px;
+    .controls {
+      margin-top: 15px;
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      gap: 10px;
     }
 
-    .story-text {
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 25px;
-      min-height: 100px;
-      background-color: #0f3460;
+    .btn-ctrl {
+      background-color: #334155;
+      color: white;
+      border: 2px solid #475569;
+      font-size: 20px;
       padding: 15px;
       border-radius: 8px;
-    }
-
-    .options-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    button {
-      background-color: #e94560;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.2s, transform 0.1s;
+      user-select: none;
     }
 
-    button:hover {
-      background-color: #ff6b81;
-      transform: translateY(-2px);
+    .btn-ctrl:active {
+      background-color: #38bdf8;
+      color: black;
     }
 
-    button:active {
-      transform: translateY(0);
+    .empty { visibility: hidden; }
+    
+    p.info {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #94a3b8;
     }
   </style>
 </head>
 <body>
 
-  <div class="game-container">
-    <h1>🌲 Hutan Terlarang</h1>
-    <div id="story" class="story-text">Memuat cerita...</div>
-    <div id="choices" class="options-grid"></div>
+  <h1>🐍 Game Ular Makan Bola</h1>
+  <div class="score-board">Skor: <span id="score">0</span></div>
+
+  <!-- Area Papan Game -->
+  <canvas id="gameCanvas" width="300" height="300"></canvas>
+
+  <!-- Tombol Kontrol untuk Layar HP -->
+  <div class="controls">
+    <div class="empty"></div>
+    <button class="btn-ctrl" onclick="changeDir('UP')">⬆️</button>
+    <div class="empty"></div>
+    <button class="btn-ctrl" onclick="changeDir('LEFT')">⬅️</button>
+    <button class="btn-ctrl" onclick="changeDir('DOWN')">⬇️</button>
+    <button class="btn-ctrl" onclick="changeDir('RIGHT')">➡️</button>
   </div>
 
+  <p class="info">Gunakan tombol panah keyboard di PC/Laptop atau tombol di layar untuk HP.</p>
+
   <script>
-    const storyData = {
-      start: {
-        text: "Kamu terbangun di pinggir hutan gelap yang berkabut. Di depanmu ada dua jalur: jalur kiri yang dipenuhi obor redup, dan jalur kanan yang terdengar suara gemericik air.",
-        buttons: [
-          { text: "Lanjut ke Jalur Kiri (Obor)", nextState: "jalurKiri" },
-          { text: "Lanjut ke Jalur Kanan (Sungai)", nextState: "jalurKanan" }
-        ]
-      },
-      jalurKiri: {
-        text: "Kamu berjalan menyusuri obor dan menemukan sebuah pintu batu besar terunci. Di samping pintu ada kotak kayu tua dan sebuah obor yang hampir padam.",
-        buttons: [
-          { text: "Buka kotak kayu tua", nextState: "bukaKotak" },
-          { text: "Cari jalan mutar di sekitar pintu", nextState: "jalanMutar" }
-        ]
-      },
-      jalurKanan: {
-        text: "Kamu sampai di tepi sungai yang deras. Terlihat sebuah jembatan kayu yang lapuk dan seekor serigala tidur memblokir jalan tepi sungai.",
-        buttons: [
-          { text: "Seberangi jembatan lapuk", nextState: "jembatanPatah" },
-          { text: "Lewati serigala dengan berjelajah perlahan", nextState: "lewatSerigala" }
-        ]
-      },
-      bukaKotak: {
-        text: "🎉 Kamu menemukan Kunci Emas kuno! Kunci itu cocok untuk pintu batu. Kamu berhasil membuka jalan keluar dari hutan dan menemukan harta karun! GAMEOVER - MENANG!",
-        buttons: [
-          { text: "Main Lagi dari Awal", nextState: "start" }
-        ]
-      },
-      jalanMutar: {
-        text: "💀 Kamu tersesat di kegelapan mendalam dan tidak bisa menemukan jalan kembali. GAMEOVER - KALAH!",
-        buttons: [
-          { text: "Coba Lagi", nextState: "start" }
-        ]
-      },
-      jembatanPatah: {
-        text: "💀 Jembatan kayu patah saat kamu melangkah! Kamu jatuh ke sungai yang deras. GAMEOVER - KALAH!",
-        buttons: [
-          { text: "Coba Lagi", nextState: "start" }
-        ]
-      },
-      lewatSerigala: {
-        text: "🎉 Kamu berhasil melewati serigala tanpa membangunkan dia! Di ujung jalan kamu menemukan desa pemukiman warga. Selamat kamu selamat! GAMEOVER - MENANG!",
-        buttons: [
-          { text: "Main Lagi dari Awal", nextState: "start" }
-        ]
-      }
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreElement = document.getElementById("score");
+
+    const box = 15; // Ukuran 1 kotak
+    let score = 0;
+
+    // Posisi awal ular
+    let snake = [
+      { x: 9 * box, y: 10 * box },
+      { x: 8 * box, y: 10 * box }
+    ];
+
+    // Posisi makanan (bola)
+    let food = {
+      x: Math.floor(Math.random() * (canvas.width / box)) * box,
+      y: Math.floor(Math.random() * (canvas.height / box)) * box
     };
 
-    function showStory(stateKey) {
-      const currentState = storyData[stateKey];
-      const storyElement = document.getElementById("story");
-      const choicesElement = document.getElementById("choices");
+    let d = "RIGHT";
 
-      storyElement.innerText = currentState.text;
-      choicesElement.innerHTML = "";
+    // Kontrol Keyboard
+    document.addEventListener("keydown", direction);
 
-      currentState.buttons.forEach(buttonData => {
-        const btn = document.createElement("button");
-        btn.innerText = buttonData.text;
-        btn.onclick = () => showStory(buttonData.nextState);
-        choicesElement.appendChild(btn);
-      });
+    function direction(event) {
+      if (event.keyCode == 37 && d != "RIGHT") d = "LEFT";
+      else if (event.keyCode == 38 && d != "DOWN") d = "UP";
+      else if (event.keyCode == 39 && d != "LEFT") d = "RIGHT";
+      else if (event.keyCode == 40 && d != "UP") d = "DOWN";
     }
 
-    showStory("start");
+    function changeDir(newDir) {
+      if (newDir == "LEFT" && d != "RIGHT") d = "LEFT";
+      if (newDir == "UP" && d != "DOWN") d = "UP";
+      if (newDir == "RIGHT" && d != "LEFT") d = "RIGHT";
+      if (newDir == "DOWN" && d != "UP") d = "DOWN";
+    }
+
+    // Cek Tabrakan
+    function collision(head, array) {
+      for (let i = 0; i < array.length; i++) {
+        if (head.x == array[i].x && head.y == array[i].y) return true;
+      }
+      return false;
+    }
+
+    // Fungsi Utama Game (Looping)
+    function draw() {
+      // Bersihkan papan game
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Gambar Ular
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = (i == 0) ? "#4ade80" : "#22c55e"; // Kepala hijau terang, badan hijau
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+        ctx.strokeStyle = "#1e293b";
+        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      // Gambar Makanan (Bola Merah)
+      ctx.fillStyle = "#f43f5e";
+      ctx.beginPath();
+      ctx.arc(food.x + box/2, food.y + box/2, box/2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Posisi kepala lama
+      let snakeX = snake[0].x;
+      let snakeY = snake[0].y;
+
+      // Gerakkan arah
+      if (d == "LEFT") snakeX -= box;
+      if (d == "UP") snakeY -= box;
+      if (d == "RIGHT") snakeX += box;
+      if (d == "DOWN") snakeY += box;
+
+      // Jika Ular Makan Bola
+      if (snakeX == food.x && snakeY == food.y) {
+        score++;
+        scoreElement.innerText = score;
+        food = {
+          x: Math.floor(Math.random() * (canvas.width / box)) * box,
+          y: Math.floor(Math.random() * (canvas.height / box)) * box
+        };
+      } else {
+        snake.pop(); // Hapus ekor jika tidak makan
+      }
+
+      // Buat kepala baru
+      let newHead = { x: snakeX, y: snakeY };
+
+      // Aturan Kalah (Menabrak dinding atau menabrak diri sendiri)
+      if (
+        snakeX < 0 || snakeY < 0 ||
+        snakeX >= canvas.width || snakeY >= canvas.height ||
+        collision(newHead, snake)
+      ) {
+        clearInterval(game);
+        alert("GAME OVER! Skor kamu: " + score);
+        location.reload(); // Restart game otomatis
+      }
+
+      snake.unshift(newHead);
+    }
+
+    // Jalankan game tiap 100ms
+    let game = setInterval(draw, 100);
   </script>
 
 </body>
